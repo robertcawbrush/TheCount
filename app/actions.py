@@ -1,0 +1,4 @@
+HELP = '-help'
+POINTS = '-point'
+PING = '-ping'
+AVAILABLE_COMMANDS = [HELP, POINTS, PING]
