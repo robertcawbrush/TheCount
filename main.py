@@ -3,15 +3,23 @@ import os
 from app import actions
 from app.actions import PREFIX
 from dotenv import load_dotenv
+from app.google_sheets import Google_Sheets
+from app.common.helpers import get_args
 
 
 def main():
     load_dotenv()
-
+    
+    try:
+        google_sheet = Google_Sheets('creds', os.environ['SHEET_ID'], 'DATA B5:I6')
+    except KeyError as ke:
+        print(f'error retrieving {ke}. Did you set the environment variable for {ke}?')
+        print('shutting down')
+        return
+    
     client = discord.Client()
     
-    def get_args(body):
-        return body.split(' ')[1]
+    
 
     @client.event
     async def on_ready():
@@ -19,7 +27,7 @@ def main():
 
     @client.event
     async def on_message(message):
-        # find out if admin for protected calls later
+        # find out if admin for protected calls later TODO: might not need based on has_permissions
         is_admin = False
         if not message.content.startswith(PREFIX):
             return
@@ -50,9 +58,9 @@ def main():
             for command in actions.AVAILABLE_COMMANDS:
                 available_commands += PREFIX + command + '\n'
             
-            response = 'All commands start with {} for example "-ping" \nAvailable commands are : \n{}\n some commands require your input such as a number for example:\n "{}"'.format(PREFIX, available_commands, (PREFIX + actions.POINTS + ' 3'))
+            help_response = 'All commands start with {} for example "-ping" \nAvailable commands are : \n{}\n some commands require your input such as a number for example:\n "{}"'.format(PREFIX, available_commands, (PREFIX + actions.POINTS + ' 3'))
 
-            await message.channel.send(response)
+            await message.channel.send(help_response)
             return
 
         if message.content.startswith(PREFIX):
