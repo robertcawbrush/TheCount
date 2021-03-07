@@ -11,9 +11,12 @@ class Google_Sheets():
         self.spreadsheet_id = spreadsheet_id
         self.sheet_range = sheet_range
         self.current_sheet = current_sheet if current_sheet is not None else 0
+        self.current_houses = {'houses': ()} 
 
+        # class init getters, calls in main repeat these
         self.connect_to_sheet()
-        self.current_houses = self.get_current_house_roles()
+        self.get_current_house_roles()
+        self.get_all_house_member_count()
 
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
@@ -57,12 +60,30 @@ class Google_Sheets():
         result = service.spreadsheets().values().get(
             spreadsheetId=spreadsheet_id, range=sheet_range).execute()
         houses = result.get("values", [])
-        return tuple([house[0] for house in houses])
+        self.current_houses['houses'] = tuple([house[0] for house in houses])
+
+    def get_all_house_member_count(self):
+        if self.current_houses is None:
+            self.get_current_house_roles()
+
+        service = self.service
+        spreadsheet_id = self.spreadsheet_id
+        num_of_houses = len(self.current_houses['houses'])
+        sheet_range = f'I5:I{5 + num_of_houses}'
+
+        result = service.spreadsheets().values().get(
+            spreadsheetId=spreadsheet_id, range=sheet_range).execute()
+        houses = result.get("values", [])
+        house_names = self.current_houses['houses']
+        for i, house_count in enumerate(houses):
+            self.current_houses[house_names[i]] = { 'count': house_count[0] }
+
+        return
 
     def find_user_house(self, roles):
         current_houses = self.current_houses
         for role in roles:
             if role.name in current_houses:
-                return role 
+                return role
 
-        return None 
+        return None

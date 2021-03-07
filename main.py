@@ -17,7 +17,6 @@ def main():
             f'error retrieving {ke}. Did you set the environment variable for {ke}?')
         print('shutting down')
         return
-    current_house_roles = None
     client = discord.Client()
 
     @client.event
@@ -49,11 +48,11 @@ def main():
 
             if house_role is not None:
                 google_sheet.add_to_sheet(username, house_role, points_to_add)
+                # return point value added to user points, return current points after sum
+                msg = f'{points_to_add} points added to {house_role}, {message.author.name}\'s  points are {"ADD POINTS HERE"}'
+                await message.channel.send(msg)
             else:
                 await message.channel.send('You are not in any current house, ask a mod to be placed in one\n to see current houses run -houses')
-            # get user that called
-            # for user that called add points to doc
-            # return point value added to user points, return current points after sum
             return
 
         if message.content.startswith(PREFIX + actions.PING):
@@ -61,10 +60,13 @@ def main():
             return
         
         if message.content.startswith(PREFIX + actions.HOUSES):
-            houses = 'Current Houses are:\n'
-            for house in google_sheet.current_houses:
-                houses += f'{house}\n'
-            await message.channel.send(houses)
+            # TODO: add number val to call, there are these houses and they have this many members
+            
+            google_sheet.get_all_house_member_count()
+            house_list = 'Current Houses are:\n'
+            for house in google_sheet.current_houses['houses']:
+                house_list += f'{house}\n'
+            await message.channel.send(house_list)
             return
 
         if message.content.startswith(PREFIX + actions.HELP):
