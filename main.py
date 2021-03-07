@@ -11,18 +11,18 @@ def main():
     load_dotenv()
 
     try:
-        google_sheet = Google_Sheets(
-            os.environ['SPREADSHEET_ID'], 'DATA B5:I6')
+        google_sheet = Google_Sheets(os.environ['SPREADSHEET_ID'], 'B5:I6')
     except KeyError as ke:
         print(
             f'error retrieving {ke}. Did you set the environment variable for {ke}?')
         print('shutting down')
         return
-
+    current_house_roles = None
     client = discord.Client()
 
     @client.event
     async def on_ready():
+        # get current house roles
         print(f'{client.user} is ready')
 
     @client.event
@@ -40,12 +40,17 @@ def main():
                 rg = get_args(message.content)
                 points_to_add = int(rg)
             except ValueError as ve:
-                await message.channel.send(f'error: supplied value {rg} is not a number')
+                await message.channel.send(f'error: {rg} is not a number')
                 return
+            user_roles = message.author.roles
 
             username = f'{message.author.name}#{message.author.discriminator}'
+            house_role = google_sheet.find_user_house(user_roles)
 
-            google_sheet.add_to_sheet(username, points_to_add)
+            if house_role is not None:
+                google_sheet.add_to_sheet(username, house_role, points_to_add)
+            else:
+                await message.channel.send('You are not in any current house, ask a mod to be placed in one\n to see current houses run -houses')
             # get user that called
             # for user that called add points to doc
             # return point value added to user points, return current points after sum
@@ -53,6 +58,13 @@ def main():
 
         if message.content.startswith(PREFIX + actions.PING):
             await message.channel.send('Good Evening')
+            return
+        
+        if message.content.startswith(PREFIX + actions.HOUSES):
+            houses = 'Current Houses are:\n'
+            for house in google_sheet.current_houses:
+                houses += f'{house}\n'
+            await message.channel.send(houses)
             return
 
         if message.content.startswith(PREFIX + actions.HELP):
