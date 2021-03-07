@@ -3,7 +3,6 @@ import os.path
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
-import json
 
 
 class Google_Sheets():
@@ -11,10 +10,14 @@ class Google_Sheets():
         self.spreadsheet_id = spreadsheet_id
         self.sheet_range = sheet_range
         self.current_sheet = current_sheet if current_sheet is not None else 0
-        self.current_houses = {'houses': ()} 
+        self.current_houses_list = ()
+        self.current_houses = {}
 
         # class init getters, calls in main repeat these
         self.connect_to_sheet()
+
+        # TODO: look at removing these calls
+        # TODO: function to get all dat
         self.get_current_house_roles()
         self.get_all_house_member_count()
 
@@ -41,6 +44,16 @@ class Google_Sheets():
         self.service = build('sheets', 'v4', credentials=creds)
         print('connected to google sheets')
 
+    def get_sheet_coordinates(self):
+        # starting at B4 iterate through all of B4:B to get houses
+        # add to houses list
+        # build houses dict that has name of house, user list starting
+        # coordinates, house list starting coordinates
+        # do not store current house points, member count or any quantity of
+        # any kinds
+        # get data every single call
+        ...
+
     def add_to_sheet(self, username, user_roles, points):
         service = self.service
         spreadsheet_id = self.spreadsheet_id
@@ -60,23 +73,23 @@ class Google_Sheets():
         result = service.spreadsheets().values().get(
             spreadsheetId=spreadsheet_id, range=sheet_range).execute()
         houses = result.get("values", [])
-        self.current_houses['houses'] = tuple([house[0] for house in houses])
+        self.current_houses_list = tuple([house[0] for house in houses])
 
     def get_all_house_member_count(self):
-        if self.current_houses is None:
+        if len(self.current_houses_list) < 1:
             self.get_current_house_roles()
 
         service = self.service
         spreadsheet_id = self.spreadsheet_id
-        num_of_houses = len(self.current_houses['houses'])
+        num_of_houses = len(self.current_houses_list)
         sheet_range = f'I5:I{5 + num_of_houses}'
 
         result = service.spreadsheets().values().get(
             spreadsheetId=spreadsheet_id, range=sheet_range).execute()
         houses = result.get("values", [])
-        house_names = self.current_houses['houses']
+        house_names = self.current_houses_list
         for i, house_count in enumerate(houses):
-            self.current_houses[house_names[i]] = { 'count': house_count[0] }
+            self.current_houses[house_names[i]] = {'count': house_count[0]}
 
         return
 
