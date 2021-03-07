@@ -9,17 +9,17 @@ from app.common.helpers import get_args
 
 def main():
     load_dotenv()
-    
+
     try:
-        google_sheet = Google_Sheets('creds', os.environ['SHEET_ID'], 'DATA B5:I6')
+        google_sheet = Google_Sheets(
+            os.environ['SPREADSHEET_ID'], 'DATA B5:I6')
     except KeyError as ke:
-        print(f'error retrieving {ke}. Did you set the environment variable for {ke}?')
+        print(
+            f'error retrieving {ke}. Did you set the environment variable for {ke}?')
         print('shutting down')
         return
-    
+
     client = discord.Client()
-    
-    
 
     @client.event
     async def on_ready():
@@ -34,16 +34,18 @@ def main():
 
         if message.author.bot or message.author == client.user:
             return
-        
+
         if message.content.startswith(PREFIX + actions.POINTS):
             try:
-                rg = get_args(message.content) 
+                rg = get_args(message.content)
                 points_to_add = int(rg)
             except ValueError as ve:
                 await message.channel.send(f'error: supplied value {rg} is not a number')
                 return
+
             username = f'{message.author.name}#{message.author.discriminator}'
-            # get drive doc
+
+            google_sheet.add_to_sheet(username, points_to_add)
             # get user that called
             # for user that called add points to doc
             # return point value added to user points, return current points after sum
@@ -57,8 +59,9 @@ def main():
             available_commands = ''
             for command in actions.AVAILABLE_COMMANDS:
                 available_commands += PREFIX + command + '\n'
-            
-            help_response = 'All commands start with {} for example "-ping" \nAvailable commands are : \n{}\n some commands require your input such as a number for example:\n "{}"'.format(PREFIX, available_commands, (PREFIX + actions.POINTS + ' 3'))
+
+            help_response = 'All commands start with {} for example "-ping" \nAvailable commands are : \n{}\n some commands require your input such as a number for example:\n "{}"'.format(
+                PREFIX, available_commands, (PREFIX + actions.POINTS + ' 3'))
 
             await message.channel.send(help_response)
             return
@@ -72,8 +75,7 @@ def main():
         client.run(apikey)
     except KeyError as ke:
         print(f'api key retrival failed for {ke}')
-    
-    
+
 
 if __name__ == '__main__':
     main()
