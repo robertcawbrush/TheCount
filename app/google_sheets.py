@@ -6,20 +6,18 @@ from google.auth.transport.requests import Request
 
 
 class Google_Sheets():
-    def __init__(self, spreadsheet_id, sheet_range, current_sheet=None):
+    def __init__(self, spreadsheet_id, sheet_range, current_sheet=0):
         self.spreadsheet_id = spreadsheet_id
         self.sheet_range = sheet_range
-        self.current_sheet = current_sheet if current_sheet is not None else 0
-        self.current_houses_list = ()
-        self.current_houses = {}
+        self.current_sheet = current_sheet 
+        self.houses_build = {}
+        try:
+            self.connect_to_sheet()
+            self.get_sheet_coordinates(self.spreadsheet_id, self.sheet_range)
+            self.build_sheet()
+        except ValueError as ve:
+            print(f'{ve} incorrect or missing')
 
-        # class init getters, calls in main repeat these
-        self.connect_to_sheet()
-
-        # TODO: look at removing these calls
-        # TODO: function to get all dat
-        self.get_current_house_roles()
-        self.get_all_house_member_count()
 
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
@@ -44,14 +42,38 @@ class Google_Sheets():
         self.service = build('sheets', 'v4', credentials=creds)
         print('connected to google sheets')
 
-    def get_sheet_coordinates(self):
-        # starting at B4 iterate through all of B4:B to get houses
-        # add to houses list
-        # build houses dict that has name of house, user list starting
-        # coordinates, house list starting coordinates
-        # do not store current house points, member count or any quantity of
-        # any kinds
-        # get data every single call
+    def get_sheet_coordinates(self, spreadsheet_id, sheet_range):
+        service = self.service
+
+        if self.spreadsheet_id is None:
+            raise ValueError
+
+        result = service.spreadsheets().values().get(
+        spreadsheetId=spreadsheet_id, range=sheet_range).execute()
+
+        self.build_houses_coordinates(result.get("values", [])[0])
+    
+    def build_houses_coordinates(self, houses):
+        # 0 b4
+        coord = 4
+        blank = 0
+        for house in houses:
+            if blank >= 2:
+                break
+            
+            if house == '':
+                blank +=1
+                coord += 1
+                continue
+            else:
+                blank = 0
+
+           # if '' then increment blank continue 
+            self.houses_build[house] = f'B{coord}'
+            coord += 1
+        
+    def build_sheet(self):
+        # iterate over house_build and overwrite whats in House column
         ...
 
     def add_to_sheet(self, username, user_roles, points):
@@ -65,15 +87,6 @@ class Google_Sheets():
 
     def subtract_from_sheet(self, username):
         ...
-
-    def get_current_house_roles(self):
-        service = self.service
-        spreadsheet_id = self.spreadsheet_id
-        sheet_range = 'H5:H'
-        result = service.spreadsheets().values().get(
-            spreadsheetId=spreadsheet_id, range=sheet_range).execute()
-        houses = result.get("values", [])
-        self.current_houses_list = tuple([house[0] for house in houses])
 
     def get_all_house_member_count(self):
         if len(self.current_houses_list) < 1:
@@ -94,9 +107,10 @@ class Google_Sheets():
         return
 
     def find_user_house(self, roles):
-        current_houses = self.current_houses
+        current_houses = self.houses_build
+
         for role in roles:
-            if role.name in current_houses:
-                return role
+            if role in current_houses:
+                return current_houses[role]
 
         return None

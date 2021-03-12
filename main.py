@@ -1,8 +1,8 @@
 import os
 import discord
+from dotenv import load_dotenv
 import app.actions as actions
 from app.actions import PREFIX
-from dotenv import load_dotenv
 from app.google_sheets import Google_Sheets
 from app.common.helpers import get_args
 
@@ -10,7 +10,7 @@ from app.common.helpers import get_args
 def main():
     load_dotenv()
     try:
-        google_sheet = Google_Sheets(os.environ['SPREADSHEET_ID'], 'B5:I6')
+        google_sheet = Google_Sheets(os.environ['SPREADSHEET_ID'], 'B4:Z4')
     except KeyError as ke:
         print(
             f'''error retrieving {ke}.
@@ -62,13 +62,14 @@ def main():
             return
 
         if message.content.startswith(PREFIX + actions.HOUSES):
-            # TODO: add number val to call, there are these houses and they have this many members
-
-            google_sheet.get_all_house_member_count()
-            house_list = 'Current Houses are:\n'
-            for house in google_sheet.current_houses['houses']:
-                house_list += f'`{house}`\n'
-            await message.channel.send(house_list)
+            houses_list = ''
+            
+            for house in google_sheet.houses_build:
+                houses_list += f'`{house}`\n'
+            if len(houses_list) > 0:
+                await message.channel.send(houses_list)
+            else:
+                await message.channel.send("There aren't any houses currently, bug a mod")
             return
 
         if message.content.startswith(PREFIX + actions.HELP):
