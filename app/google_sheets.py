@@ -55,12 +55,16 @@ class Google_Sheets():
     
     def build_houses_coordinates(self, houses):
         # 0 b4
+        alphabets_in_capital=[]
+        for i in range(66,91):
+            alphabets_in_capital.append(chr(i))
+
         coord = 4
         blank = 0
-        for house in houses:
+        for i, house  in enumerate(houses):
             if blank >= 2:
                 break
-            
+
             if house == '':
                 blank +=1
                 coord += 1
@@ -69,12 +73,18 @@ class Google_Sheets():
                 blank = 0
 
            # if '' then increment blank continue 
-            self.houses_build[house] = f'B{coord}'
+            self.houses_build[house] = f'{alphabets_in_capital[i]}4'
             coord += 1
         
     def build_sheet(self):
-        # iterate over house_build and overwrite whats in House column
-        ...
+        houses = self.houses_build
+        # build excel queries in house summaries
+        
+
+        for house in houses:
+            print(house) 
+            print(houses[house])
+        
 
     def add_to_sheet(self, username, user_roles, points):
         service = self.service
