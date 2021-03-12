@@ -1,0 +1,4 @@
+[General]
+init-hook='import sys; sys.path.append("app")'
+disable= missing-docstring,
+    invalid-name

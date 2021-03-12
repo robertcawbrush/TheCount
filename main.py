@@ -1,6 +1,6 @@
-import discord
 import os
-from app import actions
+import discord
+import app.actions as actions
 from app.actions import PREFIX
 from dotenv import load_dotenv
 from app.google_sheets import Google_Sheets
@@ -18,8 +18,6 @@ def main():
         print('shutting down')
         return
     client = discord.Client()
-    load_dotenv
-
     @client.event
     async def on_ready():
         # get current house roles
@@ -98,6 +96,7 @@ def main():
     except KeyError as ke:
         print(f'api key retrival failed for {ke}')
 
+    print('end of program after client run')
 
 if __name__ == '__main__':
     main()
