@@ -14,7 +14,6 @@ class Google_Sheets():
         try:
             self.connect_to_sheet()
             self.get_sheet_coordinates(self.spreadsheet_id, self.sheet_range)
-            self.build_sheet()
         except ValueError as ve:
             print(f'{ve} incorrect or missing')
 
@@ -51,10 +50,10 @@ class Google_Sheets():
         result = service.spreadsheets().values().get(
         spreadsheetId=spreadsheet_id, range=sheet_range).execute()
 
-        self.build_houses_coordinates(result.get("values", [])[0])
+        response_coord = result.get("values", [])
+        self.build_houses_coordinates(response_coord[0])
     
     def build_houses_coordinates(self, houses):
-        # 0 b4
         alphabets_in_capital=[]
         for i in range(66,91):
             alphabets_in_capital.append(chr(i))
@@ -73,27 +72,53 @@ class Google_Sheets():
                 blank = 0
 
            # if '' then increment blank continue 
-            self.houses_build[house] = f'{alphabets_in_capital[i]}4'
+            self.houses_build[house] = (alphabets_in_capital[i], 4)
             coord += 1
         
-    def build_sheet(self):
-        houses = self.houses_build
-        # build excel queries in house summaries
-        
-
-        for house in houses:
-            print(house) 
-            print(houses[house])
-        
-
-    def add_to_sheet(self, username, user_roles, points):
+    def add_to_sheet(self, username, house_role, points):
         service = self.service
         spreadsheet_id = self.spreadsheet_id
-        sheet_range = self.sheet_range
-        print('adding to sheet')
+
+        make_range = f'{house_role[0]}{house_role[1]+1}:{house_role[0]}2000'
         result = service.spreadsheets().values().get(
-            spreadsheetId=spreadsheet_id, range=sheet_range).execute()
-        print(f'rows? {result.get("values", [])}')
+            spreadsheetId=spreadsheet_id, range=make_range).execute()
+        
+        # iterate through col until found name then grab cell next to
+        cols = result.get('values', [])
+        start = house_role[1] + 1
+
+        for col in cols:
+            if col[0] == username:
+                print('Found it')
+                # record cell
+                break
+            start += 1
+        
+        next_range = f'{chr(ord(house_role[0]) + 1)}{start}'
+        next_range += ':' + next_range
+        result = service.spreadsheets().values().get(
+            spreadsheetId=spreadsheet_id, range=next_range).execute()
+
+        user_points = result.get('values', [])[0][0] + str(points)
+
+        values = [
+            [
+                user_points
+            ],
+        ]
+        body = {
+            'values': values
+        }
+
+        result = service.spreadsheets().values().update(
+            spreadsheetId=spreadsheet_id, range=next_range,
+            valueInputOption='USER_ENTERED', body=body).execute()
+
+        
+        print('{0} cells updated.'.format(result.get('updatedCells')))
+
+
+
 
     def subtract_from_sheet(self, username):
         ...
@@ -120,7 +145,7 @@ class Google_Sheets():
         current_houses = self.houses_build
 
         for role in roles:
-            if role in current_houses:
-                return current_houses[role]
+            if role.name in current_houses:
+                return current_houses[role.name]
 
         return None
