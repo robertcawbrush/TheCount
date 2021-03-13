@@ -53,6 +53,7 @@ class Google_Sheets():
         self.build_houses_coordinates(response_coord[0])
 
     def build_houses_coordinates(self, houses):
+        # TODO: look at using a named tuple because Dicts cant gaurantee order
         alphabets_in_capital = []
         for i in range(66, 91):
             alphabets_in_capital.append(chr(i))
