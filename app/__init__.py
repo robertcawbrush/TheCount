@@ -1,5 +1,6 @@
 import os
 import sys
+import logging
 import discord
 from dotenv import load_dotenv
 import app.actions as actions
@@ -17,13 +18,20 @@ except KeyError as ke:
     print('shutting down')
     sys.exit()
 
+logger = logging.getLogger('discord')
+logger.setLevel(logging.DEBUG)
+handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+logger.addHandler(handler)
+
 client = discord.Client()
 
 
 @client.event
 async def on_ready():
     # get current house roles
-    print(f'{client.user} is ready')
+    msg = f'{client.user} is ready'
+    print(msg)
 
 
 @client.event
@@ -48,11 +56,10 @@ async def on_message(message):
         house_role = google_sheet.find_user_house(user_roles)
 
         if house_role is not None:
-            google_sheet.add_to_sheet(username, house_role, points_to_add)
-            # return point value added to user points
-            #  return current points after sum
-            msg = f'''{points_to_add} points added to {house_role},{message.author.name}\'s
-                points are {"ADD POINTS HERE"}'''
+            total_points = google_sheet.add_to_sheet(username, house_role, points_to_add)
+            # TODO: fix house named with named tuple
+            msg = f'''{points_to_add} points for {house_role},{message.author.name}'s
+                points are {total_points}'''
             await message.channel.send(msg)
         else:
             msg = '''You are not in any current house, ask a mod to be

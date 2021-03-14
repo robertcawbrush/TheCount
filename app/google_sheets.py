@@ -75,7 +75,10 @@ class Google_Sheets():
             self.houses_build[house] = (alphabets_in_capital[i], 4)
             coord += 1
 
-    def add_to_sheet(self, username, house_role, points):
+    def add_to_sheet(self, username, house_role, points) -> int:
+        if house_role is None:
+            raise ValueError
+
         service = self.service
         spreadsheet_id = self.spreadsheet_id
 
@@ -95,24 +98,19 @@ class Google_Sheets():
         next_range = f'{chr(ord(house_role[0]) + 1)}{start}'
         result = service.spreadsheets().values().get(
             spreadsheetId=spreadsheet_id, range=next_range).execute()
-        
+
         if 'values' in result:
             user_points = result.get('values', [])[0][0]
         else:
             user_points = '0'
 
-        user_points += ' + ' + str(points)
         if user_points[0] != '=':
             user_points = '=' + user_points
 
-        values = [
-            [
-                user_points
-            ],
-        ]
-        body = {
-            'values': values
-        }
+        point_sum = int(user_points[1::]) + points
+        user_points += ' + ' + str(points)
+
+        body = {'values': [[user_points],]}
 
         result = service.spreadsheets().values().update(
             spreadsheetId=spreadsheet_id, range=next_range,
@@ -120,6 +118,8 @@ class Google_Sheets():
 
         updated_cells = result.get('updatedCells')
         print('{0} cells updated.'.format(updated_cells))
+
+        return point_sum
 
     def subtract_from_sheet(self, username):
         ...
