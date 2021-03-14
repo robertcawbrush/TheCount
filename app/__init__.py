@@ -10,7 +10,7 @@ from app.common.helpers import get_args
 
 load_dotenv()
 try:
-    google_sheet = Google_Sheets(os.environ['SPREADSHEET_ID'], 'B4:Z4')
+    google_sheet = Google_Sheets(os.environ['SPREADSHEET_ID'], 'A2','A11')
 except KeyError as ke:
     print(
         f'''error retrieving {ke}.
@@ -26,6 +26,7 @@ logger.addHandler(handler)
 
 client = discord.Client()
 
+guild = client.get_guild(817622130661261353)
 
 @client.event
 async def on_ready():
@@ -56,31 +57,44 @@ async def on_message(message):
         house_role = google_sheet.find_user_house(user_roles)
 
         if house_role is not None:
-            total_points = google_sheet.add_to_sheet(username, house_role, points_to_add)
+            try:
+                total_points = google_sheet.add_to_sheet(username, house_role, points_to_add)
             # TODO: fix house named with named tuple
-            msg = f'''{points_to_add} points for {house_role},{message.author.name}'s
+                msg = f'''{points_to_add} points for 
+                {house_role['house_name']},{message.author.name}'s
                 points are {total_points}'''
+            except ValueError:
+                msg = f'{message.author} was not found'
+            except:
+                print('adding points failed')
+                return
+            
             await message.channel.send(msg)
         else:
             msg = '''You are not in any current house, ask a mod to be
-                placed in one\n to see current houses run -houses'''
+                placed in one\nto see current houses run -houses'''
             await message.channel.send(msg)
         return
 
     if message.content.startswith(PREFIX + actions.PING):
+        # TODO: add real ping data
         await message.channel.send('Good Evening')
         return
 
     if message.content.startswith(PREFIX + actions.HOUSES):
         houses_list = ''
 
-        for house in google_sheet.houses_build:
+        for house in google_sheet.houses_info:
             houses_list += f'`{house}`\n'
         if len(houses_list) > 0:
             await message.channel.send(houses_list)
         else:
             await message.channel.send("There aren't any houses currently, bug a mod")
         return
+    
+    if message.content.startswith(PREFIX + actions.BUILD_HOUSES):
+
+        return 
 
     if message.content.startswith(PREFIX + actions.HELP):
         available_commands = ''

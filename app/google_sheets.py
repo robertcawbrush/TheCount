@@ -3,14 +3,17 @@ import os.path
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+from . import build_sheet
 
 
 class Google_Sheets():
-    def __init__(self, spreadsheet_id, sheet_range, current_sheet=0):
+    def __init__(self, spreadsheet_id, range_start, range_end, current_sheet=0):
         self.spreadsheet_id = spreadsheet_id
-        self.sheet_range = sheet_range
+        self.range_start = range_start
+        self.range_end = range_end
+        self.sheet_range = range_start + ':' + range_end
         self.current_sheet = current_sheet
-        self.houses_build = {}
+        self.houses_info = {}
         try:
             self.connect_to_sheet()
             self.get_sheet_coordinates(self.spreadsheet_id, self.sheet_range)
@@ -49,104 +52,63 @@ class Google_Sheets():
         result = service.spreadsheets().values().get(
             spreadsheetId=spreadsheet_id, range=sheet_range).execute()
 
-        response_coord = result.get("values", [])
-        self.build_houses_coordinates(response_coord[0])
+        response_coord = result.get("values", ())
+        self.build_houses_coordinates(response_coord)
 
     def build_houses_coordinates(self, houses):
-        # TODO: look at using a named tuple because Dicts cant gaurantee order
         alphabets_in_capital = []
-        for i in range(66, 91):
+        for i in range(65, 91):
             alphabets_in_capital.append(chr(i))
 
-        coord = 4
-        blank = 0
+        for i in range(65, 91):
+            alphabets_in_capital.append(chr(65) + chr(i))
+
+        coord = 14
+        offest = 3
         for i, house in enumerate(houses):
-            if blank >= 2:
-                break
+            self.houses_info[house[0]] = {
+                "users_col": alphabets_in_capital[i],
+                "points_col": alphabets_in_capital[i+1],
+                "starting_row": coord
+            }
+            alphabets_in_capital = alphabets_in_capital[offest - 1::]
 
-            if house == '':
-                blank += 1
-                coord += 1
-                continue
-            else:
-                blank = 0
-
-           # if '' then increment blank continue
-            self.houses_build[house] = (alphabets_in_capital[i], 4)
-            coord += 1
-
-    def add_to_sheet(self, username, house_role, points) -> int:
-        if house_role is None:
+    def add_to_sheet(self, username, house_coordinates, points) -> int:
+        if house_coordinates is None:
             raise ValueError
 
         service = self.service
         spreadsheet_id = self.spreadsheet_id
 
-        make_range = f'{house_role[0]}{house_role[1]+1}:{house_role[0]}2000'
+        house_range = f"{house_coordinates['house_coord']['users_col']}{house_coordinates['house_coord']['starting_row'] + 1}:{house_coordinates['house_coord']['points_col']}2000"
         result = service.spreadsheets().values().get(
-            spreadsheetId=spreadsheet_id, range=make_range).execute()
+            spreadsheetId=spreadsheet_id, range=house_range, majorDimension="ROWS").execute()
 
-        # iterate through col until found name then grab cell next to
-        cols = result.get('values', [])
-        start = house_role[1] + 1
+        users = result.get('values', [])
+        point_sum = 0
+        found = False
+        for user in users:
+            if user[0] == username:
+                found = True
+                point_sum = int(user[1]) + points
+                user[1] = point_sum
 
-        for col in cols:
-            if col[0] == username:
                 break
-            start += 1
 
-        next_range = f'{chr(ord(house_role[0]) + 1)}{start}'
-        result = service.spreadsheets().values().get(
-            spreadsheetId=spreadsheet_id, range=next_range).execute()
+        if not found:
+            raise ValueError
 
-        if 'values' in result:
-            user_points = result.get('values', [])[0][0]
-        else:
-            user_points = '0'
+        users = sorted(users, reverse=True, key=lambda x: int(x[1]))
 
-        if user_points[0] != '=':
-            user_points = '=' + user_points
-
-        point_sum = int(user_points[1::]) + points
-        user_points += ' + ' + str(points)
-
-        body = {'values': [[user_points],]}
-
-        result = service.spreadsheets().values().update(
-            spreadsheetId=spreadsheet_id, range=next_range,
-            valueInputOption='USER_ENTERED', body=body).execute()
-
-        updated_cells = result.get('updatedCells')
-        print('{0} cells updated.'.format(updated_cells))
-
+        build_sheet.build_house(self.service, users,
+                                self.spreadsheet_id, house_range)
         return point_sum
 
-    def subtract_from_sheet(self, username):
-        ...
-
-    def get_all_house_member_count(self):
-        if len(self.current_houses_list) < 1:
-            self.get_current_house_roles()
-
-        service = self.service
-        spreadsheet_id = self.spreadsheet_id
-        num_of_houses = len(self.current_houses_list)
-        sheet_range = f'I5:I{5 + num_of_houses}'
-
-        result = service.spreadsheets().values().get(
-            spreadsheetId=spreadsheet_id, range=sheet_range).execute()
-        houses = result.get("values", [])
-        house_names = self.current_houses_list
-        for i, house_count in enumerate(houses):
-            self.current_houses[house_names[i]] = {'count': house_count[0]}
-
-        return
-
     def find_user_house(self, roles):
-        current_houses = self.houses_build
+        current_houses = self.houses_info
 
         for role in roles:
             if role.name in current_houses:
-                return current_houses[role.name]
+                return {"house_name": role.name, "house_coord": current_houses[role.name]}
 
         return None
