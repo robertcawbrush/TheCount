@@ -8,7 +8,12 @@ a detailed setup will be made when the bot is read for a 1.0 release
 a number of environmnet variables are needed to run the bot as well as a copy of the google sheet template
 
 you'll need to setup your own discord bot user for your server and get its api key
+set CLIENT_ID=YOURDISCORDBOTKEY
+
 you'll need your google spreadsheet template's sheet id
+set SPREADSHEET_ID=YOURKEYHERE
+
+run `pip install -r requirements.txt` in the root directory
 
 # run
 
