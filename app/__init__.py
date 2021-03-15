@@ -11,6 +11,13 @@ from app.common.helpers import get_args
 load_dotenv()
 try:
     google_sheet = Google_Sheets(os.environ['SPREADSHEET_ID'], 'A2', 'A11')
+
+    try:
+        google_sheet.connect_to_sheet()
+        response_coord = google_sheet.get_sheet_coordinates(google_sheet.spreadsheet_id, google_sheet.sheet_range)
+        google_sheet.build_houses_coordinates(response_coord)
+    except ValueError as ve:
+        print(f'{ve} incorrect or missing')
 except KeyError as ke:
     print(
         f'''error retrieving {ke}.
@@ -27,8 +34,6 @@ handler.setFormatter(logging.Formatter(
 logger.addHandler(handler)
 
 client = discord.Client()
-
-guild = client.get_guild(817622130661261353)
 
 
 @client.event

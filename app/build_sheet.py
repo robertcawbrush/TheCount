@@ -8,7 +8,8 @@ def build_house(service, users, spreadsheet_id, house_range):
     print('{0} cells updated.'.format(updated_cells))
 
 
-def build_leaderboard():
+def build_leaderboard(service, spreadsheet_id, users, board_range):
+    print('Leaderboard building')
     raise NotImplementedError
 
 

@@ -7,18 +7,12 @@ from . import build_sheet
 
 
 class Google_Sheets():
-    def __init__(self, spreadsheet_id, range_start, range_end, current_sheet=0):
+    def __init__(self, spreadsheet_id, range_start, range_end):
         self.spreadsheet_id = spreadsheet_id
         self.range_start = range_start
         self.range_end = range_end
         self.sheet_range = range_start + ':' + range_end
-        self.current_sheet = current_sheet
         self.houses_info = {}
-        try:
-            self.connect_to_sheet()
-            self.get_sheet_coordinates(self.spreadsheet_id, self.sheet_range)
-        except ValueError as ve:
-            print(f'{ve} incorrect or missing')
 
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
@@ -53,7 +47,7 @@ class Google_Sheets():
             spreadsheetId=spreadsheet_id, range=sheet_range).execute()
 
         response_coord = result.get("values", ())
-        self.build_houses_coordinates(response_coord)
+        return response_coord
 
     def build_houses_coordinates(self, houses):
         alphabets_in_capital = []
